@@ -1,0 +1,94 @@
+paths:
+  /leads:
+    post:
+      tags: [Leads]
+      summary: Submit contact form lead
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Lead'
+      responses:
+        '201':
+          description: Lead created
+    get:
+      tags: [Leads]
+      summary: List leads (admin)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer }
+        - in: query
+          name: status
+          schema: { type: string }
+        - in: query
+          name: search
+          schema: { type: string }
+      responses:
+        '200':
+          description: Paginated leads
+
+  /newsletter/subscribe:
+    post:
+      tags: [Newsletter]
+      summary: Subscribe to newsletter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        '201':
+          description: Subscribed
+
+  /blogs:
+    get:
+      tags: [Blogs]
+      summary: List published blogs
+      responses:
+        '200':
+          description: Blog list
+
+  /blogs/{slug}:
+    get:
+      tags: [Blogs]
+      summary: Get blog by slug
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Blog detail
+
+  /news:
+    get:
+      tags: [News]
+      summary: List published news
+      responses:
+        '200':
+          description: News list
+
+  /settings/website:
+    get:
+      tags: [Settings]
+      summary: Public website contact info
+      responses:
+        '200':
+          description: Website settings
+
+  /dashboard/stats:
+    get:
+      tags: [Dashboard]
+      summary: Dashboard statistics
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Stats
