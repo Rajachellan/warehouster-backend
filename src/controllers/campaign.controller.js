@@ -2,7 +2,7 @@ const campaignService = require('../services/campaign.service');
 const asyncHandler = require('../utils/asyncHandler');
 
 exports.createCampaign = asyncHandler(async (req, res) => {
-  const campaign = await campaignService.createCampaign(req.body, req.admin);
+  const campaign = await campaignService.createCampaign(req.body, req.admin, req);
   res.status(201).json({ success: true, data: campaign });
 });
 

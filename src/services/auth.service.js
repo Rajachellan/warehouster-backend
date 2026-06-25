@@ -75,12 +75,115 @@ const resetPassword = async (token, password) => {
   return { message: 'Password reset successful' };
 };
 
-const createAdmin = async (data, createdBy) => {
+const getAdmins = async () => Admin.find().sort({ createdAt: -1 });
+
+const createAdmin = async (data, createdBy, req) => {
   const existing = await Admin.findOne({ email: data.email });
   if (existing) throw new AppError('Email already registered', 409);
-  return Admin.create({ ...data, role: data.role || ROLES.EDITOR });
+
+  if (data.role === ROLES.SUPER_ADMIN && createdBy.role !== ROLES.SUPER_ADMIN) {
+    throw new AppError('Only super admins can create super admin accounts', 403);
+  }
+
+  const admin = await Admin.create({
+    name: data.name,
+    email: data.email,
+    password: data.password,
+    role: data.role || ROLES.EDITOR,
+  });
+
+  await logActivity({
+    action: 'create',
+    entity: 'admin',
+    entityId: admin._id,
+    description: `Admin user created: ${admin.name} (${admin.email}) — role: ${admin.role}`,
+    metadata: { role: admin.role, email: admin.email },
+    performedBy: createdBy._id,
+    req,
+  });
+
+  return admin;
+};
+
+const updateAdmin = async (id, data, updatedBy, req) => {
+  const admin = await Admin.findById(id);
+  if (!admin) throw new AppError('Admin user not found', 404);
+
+  if (admin._id.equals(updatedBy._id) && data.isActive === false) {
+    throw new AppError('You cannot deactivate your own account', 400);
+  }
+
+  if (data.role === ROLES.SUPER_ADMIN && updatedBy.role !== ROLES.SUPER_ADMIN) {
+    throw new AppError('Only super admins can assign super admin role', 403);
+  }
+
+  if (admin.role === ROLES.SUPER_ADMIN && data.role && data.role !== ROLES.SUPER_ADMIN) {
+    const superCount = await Admin.countDocuments({ role: ROLES.SUPER_ADMIN, isActive: true });
+    if (superCount <= 1) {
+      throw new AppError('Cannot change role of the only super admin', 400);
+    }
+  }
+
+  const changes = [];
+  if (data.name && data.name !== admin.name) {
+    changes.push(`name → ${data.name}`);
+    admin.name = data.name;
+  }
+  if (data.role && data.role !== admin.role) {
+    changes.push(`role ${admin.role} → ${data.role}`);
+    admin.role = data.role;
+  }
+  if (typeof data.isActive === 'boolean' && data.isActive !== admin.isActive) {
+    changes.push(data.isActive ? 'activated' : 'deactivated');
+    admin.isActive = data.isActive;
+  }
+
+  if (!changes.length) return admin;
+
+  await admin.save();
+
+  await logActivity({
+    action: 'update',
+    entity: 'admin',
+    entityId: admin._id,
+    description: `Admin user updated: ${admin.email} (${changes.join(', ')})`,
+    metadata: { changes },
+    performedBy: updatedBy._id,
+    req,
+  });
+
+  return admin;
+};
+
+const resetAdminPassword = async (id, password, updatedBy, req) => {
+  const admin = await Admin.findById(id).select('+password');
+  if (!admin) throw new AppError('Admin user not found', 404);
+
+  admin.password = password;
+  await admin.save();
+
+  await logActivity({
+    action: 'update',
+    entity: 'admin',
+    entityId: admin._id,
+    description: `Password reset for admin: ${admin.email}`,
+    performedBy: updatedBy._id,
+    req,
+  });
+
+  return { message: 'Password updated' };
 };
 
 const getProfile = (admin) => admin;
 
-module.exports = { login, forgotPassword, resetPassword, createAdmin, getProfile, signToken };
+module.exports = {
+  login,
+  forgotPassword,
+  resetPassword,
+  getAdmins,
+  createAdmin,
+  updateAdmin,
+  resetAdminPassword,
+  getProfile,
+  signToken,
+};

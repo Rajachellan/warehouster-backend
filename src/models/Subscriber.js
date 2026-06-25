@@ -7,6 +7,7 @@ const subscriberSchema = new mongoose.Schema(
     status: { type: String, enum: SUBSCRIBER_STATUSES, default: 'active' },
     subscribedAt: { type: Date, default: Date.now },
     unsubscribedAt: Date,
+    unsubscribeToken: { type: String, unique: true, sparse: true },
   },
   { timestamps: true }
 );

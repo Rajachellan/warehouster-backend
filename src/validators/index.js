@@ -35,6 +35,31 @@ const campaignRules = [
   body('htmlContent').trim().notEmpty().withMessage('HTML content is required'),
 ];
 
+const createAdminRules = [
+  body('name').trim().notEmpty().withMessage('Name is required'),
+  body('email').isEmail().withMessage('Valid email is required'),
+  body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
+  body('role').optional().isIn(['super_admin', 'admin', 'editor']).withMessage('Invalid role'),
+];
+
+const updateAdminRules = [
+  body('name').optional().trim().notEmpty().withMessage('Name cannot be empty'),
+  body('role').optional().isIn(['super_admin', 'admin', 'editor']).withMessage('Invalid role'),
+  body('isActive').optional().isBoolean().withMessage('isActive must be boolean'),
+];
+
+const resetAdminPasswordRules = [
+  body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
+];
+
+const templateRules = [
+  body('name').trim().notEmpty().withMessage('Template name is required'),
+  body('subject').trim().notEmpty().withMessage('Subject is required'),
+  body('htmlContent').trim().notEmpty().withMessage('Email content is required'),
+];
+
+const unsubscribeRules = [body('token').optional().isString()];
+
 module.exports = {
   loginRules,
   forgotPasswordRules,
@@ -44,4 +69,9 @@ module.exports = {
   blogRules,
   newsRules,
   campaignRules,
+  unsubscribeRules,
+  templateRules,
+  createAdminRules,
+  updateAdminRules,
+  resetAdminPasswordRules,
 };

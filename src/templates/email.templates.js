@@ -1,4 +1,4 @@
-const baseLayout = (content) => `
+const baseLayout = (content, { unsubscribeUrl } = {}) => `
 <!DOCTYPE html>
 <html>
 <head>
@@ -12,6 +12,7 @@ const baseLayout = (content) => `
     .body { padding: 32px; color: #0A1E46; line-height: 1.6; }
     .footer { background: #F5F0E8; padding: 20px 32px; text-align: center; font-size: 12px; color: #6B7280; }
     .btn { display: inline-block; background: #0A1E46; color: #ffffff !important; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 16px; }
+    .btn-unsub { display: inline-block; background: #6B7280; color: #ffffff !important; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-size: 12px; font-weight: bold; margin-top: 12px; }
     .highlight { color: #B89650; font-weight: bold; }
     table { width: 100%; border-collapse: collapse; margin: 16px 0; }
     td { padding: 8px 0; border-bottom: 1px solid #EDE8DC; }
@@ -25,6 +26,14 @@ const baseLayout = (content) => `
     <div class="footer">
       <p>© ${new Date().getFullYear()} Warehouster. All rights reserved.</p>
       <p>3rd Floor, 17, 3rd Cross Street East, Shenoy Nagar, Chennai 600030</p>
+      ${
+        unsubscribeUrl
+          ? `<p style="margin-top:16px;">
+        <a href="${unsubscribeUrl}" class="btn-unsub">Unsubscribe</a>
+      </p>
+      <p style="margin-top:8px;font-size:11px;">You will no longer receive newsletter emails from Warehouster.</p>`
+          : ''
+      }
     </div>
   </div>
 </body>
@@ -54,17 +63,20 @@ const leadConfirmation = (name) =>
     <p>Best regards,<br><strong>The Warehouster Team</strong></p>
   `);
 
-const welcomeEmail = (email) =>
-  baseLayout(`
+const welcomeEmail = (email, unsubscribeUrl) =>
+  baseLayout(
+    `
     <h2 style="color:#0A1E46;">Welcome to Warehouster Insights</h2>
     <p>Thank you for subscribing to our newsletter at <span class="highlight">${email}</span>.</p>
     <p>You'll receive the latest updates on industrial warehousing, market trends, and strategic intelligence directly in your inbox.</p>
     <p>We're excited to have you with us!</p>
     <p>Best regards,<br><strong>The Warehouster Team</strong></p>
-  `);
+  `,
+    { unsubscribeUrl }
+  );
 
-const newsletterEmail = (htmlContent) =>
-  baseLayout(htmlContent);
+const newsletterEmail = (htmlContent, unsubscribeUrl) =>
+  baseLayout(htmlContent, { unsubscribeUrl });
 
 const resetPasswordEmail = (name, resetUrl) =>
   baseLayout(`

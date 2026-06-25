@@ -1,13 +1,23 @@
 const { Campaign } = require('../models');
 const AppError = require('../utils/AppError');
 const { paginate, buildPaginationMeta } = require('../utils/helpers');
-const { sendEmail, sendBulkEmail } = require('./email.service');
+const { sendEmail } = require('./email.service');
 const { newsletterEmail } = require('../templates/email.templates');
-const { getActiveEmails } = require('./newsletter.service');
+const { getActiveSubscribers, buildUnsubscribeUrl } = require('./newsletter.service');
 const logActivity = require('./activityLog.service');
 
-const createCampaign = async (data, admin) =>
-  Campaign.create({ ...data, createdBy: admin._id });
+const createCampaign = async (data, admin, req) => {
+  const campaign = await Campaign.create({ ...data, createdBy: admin._id });
+  await logActivity({
+    action: 'create',
+    entity: 'campaign',
+    entityId: campaign._id,
+    description: `Newsletter draft created: ${campaign.title}`,
+    performedBy: admin._id,
+    req,
+  });
+  return campaign;
+};
 
 const getCampaigns = async ({ page, limit, status }) => {
   const filter = {};
@@ -38,10 +48,11 @@ const deleteCampaign = async (id) => {
 
 const sendTestEmail = async (id, testEmail) => {
   const campaign = await getCampaignById(id);
+  const sampleUnsubscribeUrl = buildUnsubscribeUrl('test-token');
   await sendEmail({
     to: testEmail,
     subject: `[TEST] ${campaign.subject}`,
-    html: newsletterEmail(campaign.htmlContent),
+    html: newsletterEmail(campaign.htmlContent, sampleUnsubscribeUrl),
   });
   return { message: 'Test email sent' };
 };
@@ -52,7 +63,7 @@ const sendCampaign = async (id, admin, req) => {
     throw new AppError('Campaign has already been sent', 400);
   }
 
-  const recipients = await getActiveEmails();
+  const recipients = await getActiveSubscribers();
   if (!recipients.length) {
     throw new AppError('No active subscribers to send to', 400);
   }
@@ -60,8 +71,24 @@ const sendCampaign = async (id, admin, req) => {
   campaign.status = 'sending';
   await campaign.save();
 
-  const html = newsletterEmail(campaign.htmlContent);
-  const results = await sendBulkEmail(recipients, { subject: campaign.subject, html });
+  const results = { sent: 0, failed: 0, errors: [] };
+
+  for (const recipient of recipients) {
+    try {
+      const unsubscribeUrl = buildUnsubscribeUrl(recipient.unsubscribeToken);
+      const html = newsletterEmail(campaign.htmlContent, unsubscribeUrl);
+      const result = await sendEmail({
+        to: recipient.email,
+        subject: campaign.subject,
+        html,
+      });
+      if (result.sent) results.sent += 1;
+      else results.failed += 1;
+    } catch (err) {
+      results.failed += 1;
+      results.errors.push({ email: recipient.email, error: err.message });
+    }
+  }
 
   campaign.status = results.failed === recipients.length ? 'failed' : 'sent';
   campaign.recipientsCount = results.sent;

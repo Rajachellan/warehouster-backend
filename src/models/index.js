@@ -8,4 +8,5 @@ module.exports = {
   Media: require('./Media'),
   Settings: require('./Settings'),
   ActivityLog: require('./ActivityLog'),
+  NewsletterTemplate: require('./NewsletterTemplate'),
 };
