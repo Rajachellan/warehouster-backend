@@ -22,8 +22,13 @@ app.use(
 );
 app.use(
   cors({
-    // Allow both common dev ports (3000 / 3001) because Next may auto-shift.
-    origin: [config.clientUrl, config.frontendUrl, 'http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173'],
+    origin(origin, callback) {
+      // Allow non-browser tools (curl/Postman) and same-origin requests with no Origin header
+      if (!origin || config.corsOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(null, false);
+    },
     credentials: true,
   })
 );

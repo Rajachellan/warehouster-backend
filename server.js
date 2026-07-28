@@ -10,7 +10,7 @@ const start = async () => {
   await seedDefaults();
   startCampaignScheduler();
 
-  app.listen(config.port, () => {
+  app.listen(config.port, '0.0.0.0', () => {
     console.log(`Warehouster API running on port ${config.port}`);
     console.log(`Swagger docs: ${config.apiUrl}/api/docs`);
   });
