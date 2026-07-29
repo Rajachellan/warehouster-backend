@@ -10,7 +10,7 @@ FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV PORT=9000
+ENV PORT=9006
 ENV HOST=0.0.0.0
 
 RUN addgroup --system --gid 1001 nodejs && \
@@ -24,7 +24,7 @@ RUN mkdir -p /app/uploads && chown -R expressjs:nodejs /app
 
 USER expressjs
 
-EXPOSE 9000
+EXPOSE 9006
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD wget -qO- http://127.0.0.1:9000/health || exit 1
